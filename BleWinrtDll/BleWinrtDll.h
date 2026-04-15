@@ -33,6 +33,8 @@ struct ErrorMessage {
 
 enum class ScanStatus { PROCESSING, AVAILABLE, FINISHED };
 
+using ReadBytesCallback = void(*)(const uint8_t* data, int size);
+
 extern "C" {
 
 	__declspec(dllexport) void StartDeviceScan();
@@ -58,4 +60,7 @@ extern "C" {
 	__declspec(dllexport) void Quit();
 
 	__declspec(dllexport) void GetError(ErrorMessage* buf);
+
+	__declspec(dllexport) void ReadCharacteristic(wchar_t* deviceAddress, wchar_t* serviceId, wchar_t* characteristicId,ReadBytesCallback callback);
+
 }

@@ -98,4 +98,15 @@ public class BleApi
 
     [DllImport("BleWinrtDll.dll", EntryPoint = "GetError")]
     public static extern void GetError(out ErrorMessage buf);
+
+
+    public delegate void ReadBytesCallback(IntPtr data, int size);
+
+    [DllImport("BleWinrtDll.dll", CharSet = CharSet.Unicode)]
+    public static extern void ReadCharacteristic(
+        string deviceId,
+        string serviceId,
+        string characteristicId,
+        ReadBytesCallback callback);
+
 }

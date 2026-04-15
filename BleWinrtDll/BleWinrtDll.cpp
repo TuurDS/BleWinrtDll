@@ -606,3 +606,54 @@ void GetError(ErrorMessage* buf) {
 	lock_guard error_lock(errorLock);
 	wcscpy_s(buf->msg, last_error);
 }
+
+fire_and_forget ReadCharacteristicAsync(wchar_t* deviceId, wchar_t* serviceId, wchar_t* characteristicId, ReadBytesCallback callback)
+{
+	try
+	{
+		if (!callback)
+			co_return;
+
+		auto ch = co_await retrieveCharacteristic(
+			deviceId,
+			serviceId,
+			characteristicId
+		);
+
+		if (!ch)
+			co_return;
+
+		auto result = co_await ch.ReadValueAsync();
+
+		if (result.Status() != GattCommunicationStatus::Success)
+			co_return;
+
+		auto buffer = result.Value();
+		uint32_t size = buffer.Length();
+
+		std::vector<uint8_t> copy(size);
+
+		if (size > 0)
+		{
+			DataReader reader = DataReader::FromBuffer(buffer);
+			reader.ReadBytes(copy);
+		}
+
+		{
+			lock_guard lock(quitLock);
+			if (quitFlag)
+				co_return;
+		}
+		callback(copy.data(), (int)size);
+
+	}
+	catch (hresult_error& ex)
+	{
+		saveError(L"ReadCharacteristicAsync failed: %s", ex.message().c_str());
+	}
+}
+
+void ReadCharacteristic(wchar_t* deviceAddress, wchar_t* serviceId, wchar_t* characteristicId, ReadBytesCallback callback)
+{
+	ReadCharacteristicAsync(deviceAddress, serviceId, characteristicId, callback);
+}
