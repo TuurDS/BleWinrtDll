@@ -6,6 +6,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using BleWinrt;
 
 public class Demo : MonoBehaviour
 {
@@ -36,20 +37,20 @@ public class Demo : MonoBehaviour
     Dictionary<string, Dictionary<string, string>> devices = new Dictionary<string, Dictionary<string, string>>();
     string lastError;
 
-    void Start()
-    {
-        StartCoroutine(ReadLoop());
-    }
+    // void Start()
+    // {
+    //     StartCoroutine(ReadLoop());
+    // }
     IEnumerator ReadLoop()
     {
         while (true)
         {
-            BleApi.ReadCharacteristic(
-                "40:06:A0:66:7B:DD",
-                "0000fff0-0000-1000-8000-00805f9b34fb",
-                "0000fff5-0000-1000-8000-00805f9b34fb",
-                OnRead
-            );
+            // BleApi.ReadCharacteristic(
+            //     "40:06:A0:66:7B:DD",
+            //     "0000fff0-0000-1000-8000-00805f9b34fb",
+            //     "0000fff5-0000-1000-8000-00805f9b34fb",
+            //     OnRead
+            // );
 
             // wait a bit before next read
             yield return new WaitForSeconds(0.2f);
