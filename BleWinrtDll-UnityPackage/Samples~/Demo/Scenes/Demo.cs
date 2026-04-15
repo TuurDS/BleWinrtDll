@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -44,9 +45,9 @@ public class Demo : MonoBehaviour
         while (true)
         {
             BleApi.ReadCharacteristic(
-                _device_MAC_address,
-                BleApi.SERVICE_UUID_DATA,
-                BleApi.CHRCT_UUID_F5,
+                "40:06:A0:66:7B:DD",
+                "0000fff0-0000-1000-8000-00805f9b34fb",
+                "0000fff5-0000-1000-8000-00805f9b34fb",
                 OnRead
             );
 
