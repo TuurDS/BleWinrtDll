@@ -1,63 +1,72 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace DebugBle
 {
     class Program
     {
+        static string targetDeviceMac = "40:06:a0:66:7b:dd";
+        static string deviceId = null;
+        static bool found = false;
+
         static void Main(string[] args)
         {
-            Console.WriteLine("You can use this program to test the BleWinrtDll.dll. Make sure your Computer has Bluetooth enabled.");
+            Console.WriteLine("Starting BLE scan...");
 
-            BLE ble = new BLE();
-            string deviceId = null;
+            // ---------------- START SCAN ----------------
+            var scan = BLE.ScanDevices();
 
-            BLE.BLEScan scan = BLE.ScanDevices();
-            scan.Found = (_deviceId, deviceName) =>
+            scan.Found = (id, name) =>
             {
-                Console.WriteLine("found device with name: " + deviceName);
-                if (deviceId == null && deviceName == "CynteractGlove")
-                    deviceId = _deviceId;
+                Console.WriteLine($"Found: {name} -> {id}");
+
+                if (id != null && id.ToLower().Contains(targetDeviceMac))
+                {
+                    deviceId = id;
+                    found = true;
+                    Console.WriteLine("TARGET DEVICE FOUND");
+                }
             };
+
             scan.Finished = () =>
             {
-                Console.WriteLine("scan finished");
-                if (deviceId == null)
-                    deviceId = "-1";
+                Console.WriteLine("SCAN FINISHED");
             };
-            while (deviceId == null)
-                Thread.Sleep(500);
+
+            // ---------------- WAIT FOR DEVICE ----------------
+            while (!found)
+                Thread.Sleep(200);
 
             scan.Cancel();
-            if (deviceId == "-1")
+
+            if (string.IsNullOrEmpty(deviceId))
             {
-                Console.WriteLine("no device found!");
+                Console.WriteLine("Device not found.");
                 return;
             }
 
-            ble.Connect(deviceId,
-                "{f6f04ffa-9a61-11e9-a2a3-2a2ae2dbcce4}", 
-                new string[] { "{f6f07c3c-9a61-11e9-a2a3-2a2ae2dbcce4}",
-                    "{f6f07da4-9a61-11e9-a2a3-2a2ae2dbcce4}",
-                    "{f6f07ed0-9a61-11e9-a2a3-2a2ae2dbcce4}" });
+            Console.WriteLine("\nSelected device:");
+            Console.WriteLine(deviceId);
 
-            for(int guard = 0; guard < 2000; guard++)
+            Console.WriteLine("\nWaiting 2 seconds before reading...");
+            Thread.Sleep(2000);
+
+            // ---------------- TEST READ LOOP ----------------
+            Console.WriteLine("\nStarting FFF5 read test (every 500ms)\n");
+
+            while (true)
             {
-                BLE.ReadPackage();
-                BLE.WritePackage(deviceId,
-                    "{f6f04ffa-9a61-11e9-a2a3-2a2ae2dbcce4}",
-                    "{f6f07ffc-9a61-11e9-a2a3-2a2ae2dbcce4}",
-                    new byte[] { 0, 1, 2 });
-                Console.WriteLine(BLE.GetError());
-                Thread.Sleep(5);
-            }
+                try
+                {
+                    BLE.TestReadFFF5(deviceId);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("ERROR: " + e.Message);
+                }
 
-            Console.WriteLine("Press enter to exit the program...");
-            Console.ReadLine();
+                Thread.Sleep(500);
+            }
         }
     }
 }

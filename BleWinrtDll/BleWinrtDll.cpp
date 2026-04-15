@@ -4,6 +4,7 @@
 #include "stdafx.h"
 
 #include "BleWinrtDll.h"
+#include <iostream>
 
 #pragma comment(lib, "windowsapp")
 
@@ -607,7 +608,11 @@ void GetError(ErrorMessage* buf) {
 	wcscpy_s(buf->msg, last_error);
 }
 
-fire_and_forget ReadCharacteristicAsync(wchar_t* deviceId, wchar_t* serviceId, wchar_t* characteristicId, ReadBytesCallback callback)
+fire_and_forget ReadCharacteristicAsync(
+	wchar_t* deviceId,
+	wchar_t* serviceId,
+	wchar_t* characteristicId,
+	ReadBytesCallback callback)
 {
 	try
 	{
@@ -623,12 +628,13 @@ fire_and_forget ReadCharacteristicAsync(wchar_t* deviceId, wchar_t* serviceId, w
 		if (!ch)
 			co_return;
 
-		auto result = co_await ch.ReadValueAsync();
+		auto result = co_await ch.ReadValueAsync(BluetoothCacheMode::Uncached);
 
 		if (result.Status() != GattCommunicationStatus::Success)
 			co_return;
 
 		auto buffer = result.Value();
+
 		uint32_t size = buffer.Length();
 
 		std::vector<uint8_t> copy(size);
@@ -636,16 +642,17 @@ fire_and_forget ReadCharacteristicAsync(wchar_t* deviceId, wchar_t* serviceId, w
 		if (size > 0)
 		{
 			DataReader reader = DataReader::FromBuffer(buffer);
-			reader.ReadBytes(copy);
+			reader.ReadBytes(winrt::array_view<uint8_t>(copy));
 		}
-
+		// ---------------- QUIT CHECK ----------------
 		{
 			lock_guard lock(quitLock);
 			if (quitFlag)
 				co_return;
 		}
-		callback(copy.data(), (int)size);
 
+		// ---------------- CALLBACK TO C# ----------------
+		callback(copy.data(), (int)size);
 	}
 	catch (hresult_error& ex)
 	{
@@ -653,7 +660,7 @@ fire_and_forget ReadCharacteristicAsync(wchar_t* deviceId, wchar_t* serviceId, w
 	}
 }
 
-void ReadCharacteristic(wchar_t* deviceAddress, wchar_t* serviceId, wchar_t* characteristicId, ReadBytesCallback callback)
-{
-	ReadCharacteristicAsync(deviceAddress, serviceId, characteristicId, callback);
-}
+	void ReadCharacteristic(wchar_t* deviceAddress, wchar_t* serviceId, wchar_t* characteristicId, ReadBytesCallback callback)
+	{
+		ReadCharacteristicAsync(deviceAddress, serviceId, characteristicId, callback);
+	}

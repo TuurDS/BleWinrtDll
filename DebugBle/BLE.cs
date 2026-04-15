@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DebugBle;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -100,6 +101,15 @@ public class BLE
 
         [DllImport("BleWinrtDll.dll", EntryPoint = "GetError")]
         public static extern void GetError(out ErrorMessage buf);
+
+        public delegate void ReadBytesCallback(IntPtr data, int size);
+
+        [DllImport("BleWinrtDll.dll", CharSet = CharSet.Unicode)]
+        public static extern void ReadCharacteristic(
+            string deviceId,
+            string serviceId,
+            string characteristicId,
+            ReadBytesCallback callback);
     }
 
     public static Thread scanThread;
@@ -248,5 +258,42 @@ public class BLE
     ~BLE()
     {
         Close();
+    }
+
+
+    private const string SERVICE_UUID = "{0000fff0-0000-1000-8000-00805f9b34fb}";
+    private const string CHAR_UUID = "{0000fff5-0000-1000-8000-00805f9b34fb}";
+
+    public static void TestReadFFF5(string deviceId)
+    {
+        if (string.IsNullOrEmpty(deviceId))
+        {
+            Debug.Log("DeviceId is null");
+            return;
+        }
+
+        Impl.ReadCharacteristic(
+            deviceId,
+            SERVICE_UUID,
+            CHAR_UUID,
+            OnReadDebug
+        );
+    }
+    private static void OnReadDebug(IntPtr data, int size)
+    {
+        if (data == IntPtr.Zero || size <= 0)
+        {
+            Debug.Log("FFF5 READ: empty");
+            return;
+        }
+
+
+        byte[] buffer = new byte[size];
+        Marshal.Copy(data, buffer, 0, size);
+
+        byte[] KEY = new byte[] { 131, 232, 251, 60, 248, 185, 120, 216, 7, 96, 163, 218, 130, 60, 1, 241 };
+        buffer = GanCrypto.Decode(buffer, KEY);
+
+        Debug.Log("FFF5 READ: " + BitConverter.ToString(buffer));
     }
 }
